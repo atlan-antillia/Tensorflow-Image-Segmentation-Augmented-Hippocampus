@@ -287,9 +287,8 @@ and run the following bat file to evaluate TensorflowUNet model for Hippocampus.
 python ../../../src/TensorflowUNetEvaluator.py ./train_eval_infer_aug.config
 </pre>
 Evaluation console output:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_100.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_100.png" width="720" height="auto">
 
-<br>
 <pre>
 Test loss    :0.109
 Test accuracy:0.9987000226974487
