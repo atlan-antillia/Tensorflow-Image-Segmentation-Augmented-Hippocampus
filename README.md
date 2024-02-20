@@ -247,7 +247,7 @@ and run the following bat file to train TensorflowUNet model for Hippocampus.<br
 in the following way.
 
 <pre>
-python ../../../src/TensorflowUNetGeneratorTrainer.py ./train_eval_infer_aug.config
+python ../../../src/TensorflowUNetGeneratorTrainer.py ./train_eval_infer.config
 </pre>
 Train console output:<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_console_output_at_epoch_100.png" width="720" height="auto"><br>
