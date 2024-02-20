@@ -312,7 +312,7 @@ python ../../../src/TensorflowUNetInferencer.py ./train_eval_infer_aug.config
 </pre>
 Sample test images<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_test_images.png" width="1024" height="auto"><br>
-Sample test mask (ground_truth)br>
+Sample test mask (ground_truth)<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_test_masks.png" width="1024" height="auto"><br>
 
 <br>
