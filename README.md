@@ -165,12 +165,10 @@ learning_rate_reducer = False
 save_weights_only = True
 
 
-# On GENERATOR_MODE, valid dataset of [eval] section will be used to train unet model.
 [eval]
 image_datapath = "../../../dataset/Hippocampus/valid/images/"
 mask_datapath  = "../../../dataset/Hippocampus/valid/masks/"
 
-# ON GENERATOR_MODE, dataset of [test] section will be used to evaluate the trained unnet model.
 [test] 
 image_datapath = "../../../dataset/Hippocampus/test/images/"
 mask_datapath  = "../../../dataset/Hippocampus/test/masks/"
