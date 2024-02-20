@@ -294,8 +294,7 @@ Test loss    :0.109
 Test accuracy:0.9987000226974487
 </pre>
 
-As shown above, the score loss of this online dataset augmentation has been slightly improved compared to the first trial 
-without a dataset augmentation.<br>
+As shown above, the score loss of this online dataset augmentation case has been slightly improved compared to the corresponding score of our first trial without a dataset augmentation.<br>
 Evaluation console output of the first trial:<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_33.png" width="720" height="auto"><br>
 
