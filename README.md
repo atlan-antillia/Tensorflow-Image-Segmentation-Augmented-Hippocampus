@@ -6,9 +6,10 @@ the <a href="https://github.com/sarah-antillia/Tensorflow-Image-Segmentation-API
 Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/20).
 <br><br>
 In order to improve segmentation accuracy, we will use an online dataset augmentation strategy based on Python script <a href="./src/ImageMaskAugmentor.py">
-ImageMaskAugmentor.py</a> to train a Pancreas Segmentation Model.<br>
-
-
+ImageMaskAugmentor.py</a> to train a Pancreas Segmentation Model.<br><br>
+Please see also our first experiment 
+<a href="https://github.com/atlan-antillia/Tensorflow-Image-Segmentation-Hippocampus">Tensorflow-Image-Segmentation-Hippocampus</a>
+<br>
 <br>
 As a first trial, we use the simple UNet Model 
 <a href="./src/TensorflowUNet.py">TensorflowSlightlyFlexibleUNet</a> for this Hippocampus Segmentation.<br>
@@ -164,7 +165,6 @@ create_backup  = False
 learning_rate_reducer = False
 save_weights_only = True
 
-
 [eval]
 image_datapath = "../../../dataset/Hippocampus/valid/images/"
 mask_datapath  = "../../../dataset/Hippocampus/valid/masks/"
@@ -238,7 +238,7 @@ Image-Segmentation-ImageMaskDataGenerator.</a>.
 <h3>
 3.1 Training
 </h3>
-Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Hippocampus</b> folder,<br>
+Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus</b> folder,<br>
 and run the following bat file to train TensorflowUNet model for Hippocampus.<br>
 <pre>
 ./1.train_generator.bat
@@ -278,7 +278,7 @@ Sample masks in generated_masks_dir<br>
 <h3>
 3.2 Evaluation
 </h3>
-Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Hippocampus</b> folder,<br>
+Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus</b> folder,<br>
 and run the following bat file to evaluate TensorflowUNet model for Hippocampus.<br>
 <pre>
 ./2.evaluate.bat
@@ -302,7 +302,7 @@ Evaluation console output of the first trial:<br>
 <h2>
 3.3 Inference
 </h2>
-Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Hippocampus</b> folder<br>
+Please move to a <b>./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus</b> folder<br>
 ,and run the following bat file to infer segmentation regions for images by the Trained-TensorflowUNet model for Hippocampus.<br>
 <pre>
 ./3.infer.bat
