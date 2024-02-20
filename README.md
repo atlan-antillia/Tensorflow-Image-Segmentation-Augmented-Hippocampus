@@ -290,12 +290,13 @@ Evaluation console output:<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_100.png" width="720" height="auto"><br>
 
 <br>
-As shown above, the score loss of this online dataset augmentation has been slightly improved compared to the first trial 
-without a dataset augmentation.
 <pre>
 Test loss    :0.109
 Test accuracy:0.9987000226974487
 </pre>
+
+As shown above, the score loss of this online dataset augmentation has been slightly improved compared to the first trial 
+without a dataset augmentation.
 Evaluation console output of the first trial:<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_33.png" width="720" height="auto"><br>
 
