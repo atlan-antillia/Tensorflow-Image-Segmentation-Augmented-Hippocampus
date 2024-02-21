@@ -1,10 +1,22 @@
-<h2>Tensorflow-Image-Segmentation-Augmented-Hippocampus (2024/02/21)</h2>
+<h2>Tensorflow-Image-Segmentation-Augmented-Hippocampus (Updated: 2024/02/22)</h2>
 
 This is the second experimental Image Segmentation project for Hippocampus based on
 the <a href="https://github.com/sarah-antillia/Tensorflow-Image-Segmentation-API">Tensorflow-Image-Segmentation-API</a>, and
 <a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
-Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/20).
+Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/21).
 <br><br>
+<li>2024/02/21: Modified to use the latest dataset (rotated 90 degrees counterclockwise)
+<a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
+Hippocampus-ImageMask-Dataset.zip</a> (Updated:2024/02/21).
+</li>
+<li>2024/02/21: Modified the parameters in [augmentor] section in 
+    <a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer.config">train_eval_infer.config</a> 
+</li>
+<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_images.png" width="720" height="auto">
+<br>
+<br>
+
 In order to improve segmentation accuracy, we will use an online dataset augmentation strategy based on Python script <a href="./src/ImageMaskAugmentor.py">
 ImageMaskAugmentor.py</a> to train a Pancreas Segmentation Model.<br><br>
 Please see also our first experiment 
@@ -28,10 +40,9 @@ you may try other Tensorflow UNet Models:<br>
 The original image dataset used here has been taken from the following kaggle web site.<br>
 <a href="https://www.kaggle.com/datasets/andrewmvd/hippocampus-segmentation-in-mri-images">
 Hippocampus Segmentation in MRI Images</a><br>
-
-<pre>
+<br>
 <b>About Dataset</b>
-
+<pre>
 Introduction
 The hippocampus is a structure within the brain that plays important roles in the 
 consolidation of information from short-term memory to long-term memory, and in spatial 
@@ -41,9 +52,9 @@ being T1 ideal for representing structure.
 The hippocampus has become the focus of research in several neurodegenerative disorders. 
 Automatic segmentation of this structure from magnetic resonance (MR) imaging scans of the 
 brain facilitates this work, especially in resource poor environments.
-<br>
+</pre>
 <b>About This Dataset</b>
-
+<pre>
 This dataset contains T1-weighted MR images of 50 subjects, 40 of whom are patients with 
 temporal lobe epilepsy and 10 are nonepileptic subjects. Hippocampus labels are provided 
 for 25 subjects for training. For more information about the dataset, refer to the 
@@ -86,9 +97,9 @@ url= {https://www.nitrc.org/projects/hippseg_2011/}
 </a>
 </h3>
  If you would like to train this Hippocampus Segmentation model by yourself,
- please download the latest dataset from the google drive 
+ please download the latest dataset(rotated 90 degrees counterclockwise) from the google drive 
 <a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
-Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/20).
+Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/21).
 
 Please see also the <a href="https://github.com/atlan-antillia/Hippocampus-Image-Dataset">Hippocampus-Image-Dataset</a>.<br>
 Please expand the downloaded ImageMaskDataset and place them under <b>./dataset</b> folder to be
@@ -127,7 +138,7 @@ by using <a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampu
 <pre>
 ; train_eval_infer.config
 ; Pancreas, GENERATOR_MODE=True
-; 2024/02/20 (C) antillia.com
+; 2024/02/21 (C) antillia.com
 [model]
 generator     = True
 image_width    = 512
@@ -139,7 +150,6 @@ base_kernels   = (5,5)
 num_layers     = 7
 dropout_rate   = 0.08
 learning_rate  = 0.0001
-
 clipvalue      = 0.5
 dilation       = (2,2)
 ;loss           = "binary_crossentropy"
@@ -190,33 +200,35 @@ debug     = True
 augmentation   = True
 
 [augmentor]
-vflip    = True
+;2024/02/21 vflip=False
+vflip    = False
 hflip    = True
 rotation = True
 angles   = [5, 10,]
-#shrinks  = [0.8]
+shrinks  = [0.8]
 shears   = [0.2]
 transformer = True
 alpah       = 1300
 sigmoid     = 8
 </pre>
+
 Please note that the online augementor 
 <a href="./src/ImageMaskAugmentor.py">
 ImageMaskAugmentor.py</a> reads the parameters in [generator] and [augmentor] sections, and yields some images and mask depending on the batch_size,
  which are used for each epoch of the training and evaluation process of this UNet Model. 
 <pre>
 [augmentor]
-vflip    = True
+vflip    = False
 hflip    = True
 rotation = True
 angles   = [5, 10,]
-#shrinks  = [0.8]
+shrinks  = [0.8]
 shears   = [0.2]
 transformer = True
 alpah       = 1300
 sigmoid     = 8
 </pre>
-Depending on these parameters in [augmentor] section, it will generate vfliped, hflipped, rotated, 
+Depending on these parameters in [augmentor] section, it will generate hflipped, rotated, shrinked,
 sheared, elastic-transformed images and masks
 from the original images and masks in the folders specified by image_datapath and mask_datapath in 
 [train] and [eval] sections.<br>
@@ -250,13 +262,13 @@ in the following way.
 python ../../../src/TensorflowUNetGeneratorTrainer.py ./train_eval_infer.config
 </pre>
 Train console output:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_console_output_at_epoch_100.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_console_output_at_epoch_68.png" width="720" height="auto"><br>
 Train metrics:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_metrics_at_epoch_100.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_metrics_at_epoch_68.png" width="720" height="auto"><br>
 Train losses:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_losses_at_epoch_100.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_losses_at_epoch_68.png" width="720" height="auto"><br>
 <br>
-The following debug setting is helpful whether your parameters in [augmentor] section are good or not.
+The following debug setting is helpful whether your parameters in [augmentor] section are good or not good.
 <pre>
 [generator]
 debug     = True
@@ -287,16 +299,16 @@ and run the following bat file to evaluate TensorflowUNet model for Hippocampus.
 python ../../../src/TensorflowUNetEvaluator.py ./train_eval_infer_aug.config
 </pre>
 Evaluation console output:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_100.png" width="720" height="auto">
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_68.png" width="720" height="auto">
 
 <pre>
-Test loss    :0.109
-Test accuracy:0.9987000226974487
+Test loss    :0.107
+Test accuracy:0.9987999796867371
 </pre>
 
 As shown above, the score loss of this online dataset augmentation case has been slightly improved compared to the corresponding score of our first trial without a dataset augmentation.<br>
 Evaluation console output of the first trial:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_33.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_41.png" width="720" height="auto"><br>
 
 <h2>
 3.3 Inference
@@ -326,69 +338,68 @@ Enlarged samples<br>
 <table>
 <tr>
 <td>
-test/images/10086_HFH_010.jpg<br>
-<img src="./dataset/Hippocampus/test/images/10086_HFH_010.jpg" width="512" height="auto">
+test/images/10040_HFH_017.jpg<br>
+<img src="./dataset/Hippocampus/test/images/10040_HFH_017.jpg" width="512" height="auto">
 
 </td>
 <td>
-Inferred merged/10086_HFH_010.jpg<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10086_HFH_010.jpg" width="512" height="auto">
-</td> 
-</tr>
-<!-- 2-->
-<tr>
-<td>
-test/images/10121_HFH_007.jpg<br>
-<img src="./dataset/Hippocampus/test/images/10121_HFH_007.jpg" width="512" height="auto">
-
-</td>
-<td>
-Inferred merged/10121_HFH_007.jpg<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10121_HFH_007.jpg" width="512" height="auto">
+Inferred merged/10040_HFH_017.jpg<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10040_HFH_017.jpg" width="512" height="auto">
 </td> 
 </tr>
 
-<!-- 3-->
 <tr>
 <td>
-test/images/10193_HFH_018.jpg<br>
-<img src="./dataset/Hippocampus/test/images/10193_HFH_018.jpg" width="512" height="auto">
+test/images/10048_HFH_004.jpg<br>
+<img src="./dataset/Hippocampus/test/images/10048_HFH_004.jpg" width="512" height="auto">
 
 </td>
 <td>
-Inferred merged/10193_HFH_018.jpg<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10193_HFH_018.jpg" width="512" height="auto">
+Inferred merged/10048_HFH_004.jpg<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10048_HFH_004.jpg" width="512" height="auto">
 </td> 
 </tr>
 
-<!-- 4-->
+
 <tr>
 <td>
-test/images/10221_HFH_016.jpg<br>
-<img src="./dataset/Hippocampus/test/images/10221_HFH_016.jpg" width="512" height="auto">
+test/images/10049_HFH_012.jpg<br>
+<img src="./dataset/Hippocampus/test/images/10049_HFH_012.jpg" width="512" height="auto">
 
 </td>
 <td>
-Inferred merged/10221_HFH_016.jpg<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10221_HFH_016.jpg" width="512" height="auto">
+Inferred merged/10049_HFH_012.jpg<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10049_HFH_012.jpg" width="512" height="auto">
+</td> 
+</tr>
+
+
+<tr>
+<td>
+test/images/10053_HFH_018.jpg<br>
+<img src="./dataset/Hippocampus/test/images/10053_HFH_018.jpg" width="512" height="auto">
+
+</td>
+<td>
+Inferred merged/10053_HFH_018.jpg<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10053_HFH_018.jpg" width="512" height="auto">
 </td> 
 </tr>
 
 <!-- 5-->
 <tr>
 <td>
-test/images/10255_HFH_016.jpg<br>
-<img src="./dataset/Hippocampus/test/images/10255_HFH_016.jpg" width="512" height="auto">
+test/images/10064_HFH_010.jpg<br>
+<img src="./dataset/Hippocampus/test/images/10064_HFH_010.jpg" width="512" height="auto">
 
 </td>
 <td>
-Inferred merged/10255_HFH_016.jpg<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10255_HFH_016.jpg" width="512" height="auto">
+Inferred merged/10064_HFH_010.jpg<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/test_output_merged/10064_HFH_010.jpg" width="512" height="auto">
 </td> 
 </tr>
 
 </table>
-
 
 <h3>
 References
