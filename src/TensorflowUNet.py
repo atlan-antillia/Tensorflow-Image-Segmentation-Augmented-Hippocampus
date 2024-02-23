@@ -135,9 +135,9 @@ from GrayScaleImageWriter import GrayScaleImageWriter
 
 #2023/10/26
 from SeedResetCallback       import SeedResetCallback
-
 from losses import dice_coef, basnet_hybrid_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss, dice_loss
+# 2024/02/22 Added bce_dice_loss
+from losses import iou_coef, iou_loss, bce_iou_loss, dice_loss,  bce_dice_loss
 
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -181,6 +181,8 @@ MODEL  = "model"
 TRAIN  = "train"
 INFER  = "infer"
 EVAL   = "eval"
+SEGMENTATION = "segmentation"
+
 # 2023/06/10
 TILEDINFER = "tiledinfer"
 
@@ -245,7 +247,6 @@ class TensorflowUNet:
     show_summary = self.config.get(MODEL, "show_summary")
     if show_summary:
       self.model.summary()
-
 
   def create(self, num_classes, image_height, image_width, image_channels,
             base_filters = 16, num_layers = 5):
@@ -541,7 +542,13 @@ class TensorflowUNet:
 
   # 2023/05/05 Added newly.    
   def infer(self, input_dir, output_dir, expand=True):
-    writer       = GrayScaleImageWriter()
+    colorize = self.config.get(SEGMENTATION, "colorize", dvalue=False)
+    black    = self.config.get(SEGMENTATION, "black",    dvalue="black")
+    white    = self.config.get(SEGMENTATION, "white",    dvalue="white")
+    blursize = self.config.get(SEGMENTATION, "blursize", dvalue=None)
+
+    writer       = GrayScaleImageWriter(colorize=colorize, black=black, white=white)
+
     # We are intereseted in png and jpg files.
     image_files  = glob.glob(input_dir + "/*.png")
     image_files += glob.glob(input_dir + "/*.jpg")
@@ -583,6 +590,8 @@ class TensorflowUNet:
       if merged_dir !=None:
         # Resize img to the original size (w, h)
         img   = cv2.resize(img, (w, h))
+        if blursize:
+          img   = cv2.blur(img, blursize)
         img += mask
         merged_file = os.path.join(merged_dir, basename)
         cv2.imwrite(merged_file, img)

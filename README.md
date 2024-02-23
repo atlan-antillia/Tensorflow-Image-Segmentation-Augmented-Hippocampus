@@ -1,4 +1,4 @@
-<h2>Tensorflow-Image-Segmentation-Augmented-Hippocampus (Updated: 2024/02/22)</h2>
+<h2>Tensorflow-Image-Segmentation-Augmented-Hippocampus (Updated: 2024/02/23)</h2>
 
 This is the second experimental Image Segmentation project for Hippocampus based on
 the <a href="https://github.com/sarah-antillia/Tensorflow-Image-Segmentation-API">Tensorflow-Image-Segmentation-API</a>, and
@@ -12,7 +12,18 @@ Hippocampus-ImageMask-Dataset.zip</a> (Updated:2024/02/21).
 <li>2024/02/21: Modified the parameters in [augmentor] section in 
     <a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer.config">train_eval_infer.config</a> 
 </li>
+<li>2024/02/23: Added [segmentation] section to 
+<a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer.config">train_eval_infer.config</a> 
+to be able to colorize the inferred segmentation regions.
+</li>
+<li>2024/02/23: Modified loss parameter in [model] setction to be "bce_dice_loss" in   
+<a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer.config">train_eval_infer.config</a> 
+to be able to colorize the inferred mask regions.
+</li>
+<li>2024/02/23: Updated <a href="./src/TensorflowUNet.py">TensorflowUNet.py</a> and <a href="./src/GrayScaleImageWriter.py">GrayScaleImageWriter.py</a>.
+</li>
 <br>
+
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_images.png" width="720" height="auto">
 <br>
 <br>
@@ -134,11 +145,14 @@ be effective to improve segmentation accuracy.
 </h3>
 This <a href="./src/TensorflowUNet.py">TensorflowUNet</a> model is slightly flexibly customizable by a configuration file.<br>
 For example, <b>TensorflowSlightlyFlexibleUNet/Hippocampus</b> model can be customizable
-by using <a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer_aug.config">train_eval_infer_aug.config</a>
+by using <a href="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/train_eval_infer.config">train_eval_infer.config</a>
 <pre>
 ; train_eval_infer.config
 ; Pancreas, GENERATOR_MODE=True
 ; 2024/02/21 (C) antillia.com
+; 2024/02/22 Modified to use 
+; loss           = "bce_dice_loss"
+
 [model]
 generator     = True
 image_width    = 512
@@ -152,10 +166,8 @@ dropout_rate   = 0.08
 learning_rate  = 0.0001
 clipvalue      = 0.5
 dilation       = (2,2)
-;loss           = "binary_crossentropy"
-loss           = "bce_iou_loss"
-;metrics        = ["iou_coef"]
-;metrics        = ["binary_accuracy", "sensitivity", "specificity"]
+;loss           = "bce_iou_loss"
+loss           = "bce_dice_loss"
 metrics        = ["binary_accuracy"]
 show_summary   = False
 
@@ -188,6 +200,12 @@ images_dir    = "../../../dataset/Hippocampus/test/images/"
 output_dir    = "./test_output"
 merged_dir    = "./test_output_merged"
 
+[segmentation]
+colorize      = True
+black         = "black"
+white         = "green"
+blursize      = None
+
 [mask]
 blur      = True
 blur_size = (5,5)
@@ -210,6 +228,7 @@ shears   = [0.2]
 transformer = True
 alpah       = 1300
 sigmoid     = 8
+
 </pre>
 
 Please note that the online augementor 
@@ -262,11 +281,11 @@ in the following way.
 python ../../../src/TensorflowUNetGeneratorTrainer.py ./train_eval_infer.config
 </pre>
 Train console output:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_console_output_at_epoch_68.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_console_output_at_epoch_49.png" width="720" height="auto"><br>
 Train metrics:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_metrics_at_epoch_68.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_metrics_at_epoch_49.png" width="720" height="auto"><br>
 Train losses:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_losses_at_epoch_68.png" width="720" height="auto"><br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/train_losses_at_epoch_49.png" width="720" height="auto"><br>
 <br>
 The following debug setting is helpful whether your parameters in [augmentor] section are good or not good.
 <pre>
@@ -299,16 +318,15 @@ and run the following bat file to evaluate TensorflowUNet model for Hippocampus.
 python ../../../src/TensorflowUNetEvaluator.py ./train_eval_infer_aug.config
 </pre>
 Evaluation console output:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_68.png" width="720" height="auto">
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_49.png" width="720" height="auto">
 
 <pre>
-Test loss    :0.107
+Test loss    :0.0625
 Test accuracy:0.9987999796867371
 </pre>
 
-As shown above, the score loss of this online dataset augmentation case has been slightly improved compared to the corresponding score of our first trial without a dataset augmentation.<br>
-Evaluation console output of the first trial:<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_41.png" width="720" height="auto"><br>
+As shown above, Test loss, "bce_dice_loss" for test dataset, has slightly improved compared to the case of "bce_iou_loss".<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_68.png" width="720" height="auto">
 
 <h2>
 3.3 Inference
