@@ -4,7 +4,6 @@ This is the second experimental Image Segmentation project for Hippocampus based
 the <a href="https://github.com/sarah-antillia/Tensorflow-Image-Segmentation-API">Tensorflow-Image-Segmentation-API</a>, and
 <a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
 Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/21).
-<br><br>
 <br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/segmentation_samples.png" width="720" height="auto">
 <br>
