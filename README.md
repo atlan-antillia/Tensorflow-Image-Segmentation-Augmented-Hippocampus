@@ -324,7 +324,7 @@ Test loss    :0.0625
 Test accuracy:0.9987999796867371
 </pre>
 
-As shown above, Test loss, "bce_dice_loss" for test dataset, has slightly improved compared to the case of "bce_iou_loss".<br>
+As shown above, Test loss, "bce_dice_loss" for test dataset, has been slightly improved compared to the case of "bce_iou_loss".<br>
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/evaluate_console_output_at_epoch_68.png" width="720" height="auto">
 
 <h2>
