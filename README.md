@@ -23,7 +23,6 @@ to be able to colorize the inferred mask regions.
 <li>2024/02/23: Updated <a href="./src/TensorflowUNet.py">TensorflowUNet.py</a> and <a href="./src/GrayScaleImageWriter.py">GrayScaleImageWriter.py</a>.
 </li>
 <br>
-
 <img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_images.png" width="720" height="auto">
 <br>
 <br>
