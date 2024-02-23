@@ -5,6 +5,9 @@ the <a href="https://github.com/sarah-antillia/Tensorflow-Image-Segmentation-API
 <a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
 Hippocampus-ImageMask-Dataset.zip</a> (Updated: 2024/02/21).
 <br><br>
+<br>
+<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/segmentation_samples.png" width="720" height="auto">
+<br>
 <li>2024/02/21: Modified to use the latest dataset (rotated 90 degrees counterclockwise)
 <a href="https://drive.google.com/file/d/1FAgeAlwvzCscZVvAovqpsTQdum90_7y-/view?usp=sharing">
 Hippocampus-ImageMask-Dataset.zip</a> (Updated:2024/02/21).
@@ -22,9 +25,7 @@ to be able to colorize the inferred mask regions.
 </li>
 <li>2024/02/23: Updated <a href="./src/TensorflowUNet.py">TensorflowUNet.py</a> and <a href="./src/GrayScaleImageWriter.py">GrayScaleImageWriter.py</a>.
 </li>
-<br>
-<img src="./projects/TensorflowSlightlyFlexibleUNet/Augmented-Hippocampus/asset/sample_images.png" width="720" height="auto">
-<br>
+
 <br>
 
 In order to improve segmentation accuracy, we will use an online dataset augmentation strategy based on Python script <a href="./src/ImageMaskAugmentor.py">
