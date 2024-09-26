@@ -13,63 +13,73 @@
 # limitations under the License.
 #
 
-# TensorflowUNetTileInfer.py
+# TensorflowUNetTileInferencer.py
 # 2023/06/08 to-arai
-
+# 2024/04/22: Moved infer_tiles method in TensorflowModel to this class 
+# 2024/06/03: Modified to use TiledInferencer class.
 
 import os
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="false"
+os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="true"
 
-import shutil
 import sys
+
 import traceback
 
 from ConfigParser import ConfigParser
-from ImageMaskDataset import ImageMaskDataset
 
 from TensorflowUNet import TensorflowUNet
-
 from TensorflowAttentionUNet import TensorflowAttentionUNet 
 from TensorflowEfficientUNet import TensorflowEfficientUNet
 from TensorflowMultiResUNet import TensorflowMultiResUNet
 from TensorflowSwinUNet import TensorflowSwinUNet
-
+from TensorflowTransUNet import TensorflowTransUNet
 from TensorflowUNet3Plus import TensorflowUNet3Plus
 from TensorflowU2Net import TensorflowU2Net
+from TensorflowSharpUNet import TensorflowSharpUNet
+#from TensorflowBASNet    import TensorflowBASNet
+from TensorflowDeepLabV3Plus import TensorflowDeepLabV3Plus
+from TensorflowEfficientNetB7UNet import TensorflowEfficientNetB7UNet
+#from TensorflowXceptionLikeUNet import TensorflowXceptionLikeUNet
+from TensorflowUNetInferencer import TensorflowUNetInferencer
 
-MODEL  = "model"
-TRAIN  = "train"
-INFER  = "infer"
+from TensorflowModelLoader import TensorflowModelLoader
+from TiledInferencer import TiledInferencer
 
-# Added section name [tiledinfer] to train_eval_infer.config
+class TensorflowUNetTiledInferencer:
 
-TILEDINFER = "tiledinfer"
+  def __init__(self, config_file):
+    print("=== TensorflowUNetTiledInferencer.__init__ config?file {}".format(config_file))
+    self.config = ConfigParser(config_file)
+    # Create a UNetMolde and compile
+    #model          = TensorflowUNet(config_file)
+    ModelClass = eval(self.config.get(ConfigParser.MODEL, "model", dvalue="TensorflowUNet"))
+    print("=== ModelClass {}".format(ModelClass))
 
+    self.unet  = ModelClass(config_file) 
+    print("--- self.unet {}".format(self.unet))
+    self.model = self.unet.model
+
+    # 2024/04/22 Load Model
+    self.loader = TensorflowModelLoader(config_file)
+    self.loader.load(self.model)
+
+    self.tiled_inferencer = TiledInferencer(self.model, config_file)
+    print("=== Created TiledInferencer")
+
+  def infer(self):
+    print("=== TensorflowUNetTiledInferencer call tilede_inferencer.infer()")
+    self.tiled_inferencer.infer()
+ 
 if __name__ == "__main__":
   try:
     config_file    = "./train_eval_infer.config"
     if len(sys.argv) == 2:
       config_file = sys.argv[1]
-    config     = ConfigParser(config_file)
-    images_dir = config.get(TILEDINFER, "images_dir")
-    output_dir = config.get(TILEDINFER, "output_dir")
- 
-    # Create a UNetMolde and compile
-    #model          = TensorflowUNet(config_file)
-    ModelClass = eval(config.get(MODEL, "model", dvalue="TensorflowUNet"))
-    model     = ModelClass(config_file)
-      
-    if not os.path.exists(images_dir):
-      raise Exception("Not found " + images_dir)
-    
-    if os.path.exists(output_dir):
-      shutil.rmtree(output_dir)
-    if not os.path.exists(output_dir):
-      os.makedirs(output_dir)
-
-    model.infer_tiles(images_dir, output_dir, expand=True)
+  
+    inferencer = TensorflowUNetTiledInferencer(config_file)
+    inferencer.infer()
 
   except:
     traceback.print_exc()

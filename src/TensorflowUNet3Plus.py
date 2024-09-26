@@ -42,48 +42,33 @@ import sys
 import datetime
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="false"
+os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="true"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-import shutil
 
 import sys
-import glob
+
 import traceback
 import random
 import numpy as np
-import cv2
+
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from PIL import Image, ImageFilter, ImageOps
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.layers import Input
 
 from tensorflow.keras.layers import Conv2D, Dropout, Conv2D, MaxPool2D, BatchNormalization
 
-from tensorflow.keras.layers import Conv2DTranspose
-from tensorflow.keras.layers import concatenate
-from tensorflow.keras.activations import relu
+#from tensorflow.keras.layers import Conv2DTranspose
+#from tensorflow.keras.layers import concatenate
+#from tensorflow.keras.activations import relu
 from tensorflow.keras import Model
-from tensorflow.keras.losses import  BinaryCrossentropy
-from tensorflow.keras.metrics import BinaryAccuracy
-#from tensorflow.keras.metrics import Mean
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from ConfigParser import ConfigParser
-
-from EpochChangeCallback import EpochChangeCallback
-from GrayScaleImageWriter import GrayScaleImageWriter
-
-from losses import dice_coef, basnet_hybrid_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss
 
 import tensorflow as tf
 import tensorflow.keras as k
 from TensorflowUNet import TensorflowUNet
-
-#from .unet3plus_utils import conv_block
 
 
 """
@@ -96,72 +81,11 @@ Functions
 See also: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/engine/training.py
 """
 
-MODEL  = "model"
-TRAIN  = "train"
-INFER  = "infer"
-# 2023/06/10
-TILEDINFER = "tiledinfer"
-
-
-BEST_MODEL_FILE = "best_model.h5"
-
 class TensorflowUNet3Plus(TensorflowUNet):
 
   def __init__(self, config_file):
     super().__init__(config_file)
-    
-    self.set_seed()
-    self.config_file = config_file
-    self.config    = ConfigParser(config_file)
-    image_height   = self.config.get(MODEL, "image_height")
-    image_width    = self.config.get(MODEL, "image_width")
-    image_channels = self.config.get(MODEL, "image_channels")
-    num_classes    = self.config.get(MODEL, "num_classes")
-    base_filters   = self.config.get(MODEL, "base_filters")
-    num_layers     = self.config.get(MODEL, "num_layers")
 
-    self.model     = self.create(num_classes, image_height, image_width, image_channels, 
-                            base_filters = base_filters, num_layers = num_layers)
-    
-    learning_rate  = self.config.get(MODEL, "learning_rate")
-    clipvalue      = self.config.get(MODEL, "clipvalue", 0.2)
-
-    self.optimizer = Adam(learning_rate = learning_rate, 
-         beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, 
-         clipvalue=clipvalue,  #2023/06/30
-         amsgrad=False)
-    print("=== Optimizer Adam learning_rate {} clipvalue {}".format(learning_rate, clipvalue))
-    
-    self.model_loaded = False
-
-    # 2023/05/20 Modified to read loss and metrics from train_eval_infer.config file.
-    binary_crossentropy = tf.keras.metrics.binary_crossentropy
-    binary_accuracy     = tf.keras.metrics.binary_accuracy
-
-    # Default loss and metrics functions
-    self.loss    = binary_crossentropy
-    self.metrics = [binary_accuracy]
-    
-    # Read a loss function name from our config file, and eval it.
-    # loss = "binary_crossentropy"
-    self.loss  = eval(self.config.get(MODEL, "loss"))
-
-    # Read a list of metrics function names, ant eval each of the list,
-    # metrics = ["binary_accuracy"]
-    metrics  = self.config.get(MODEL, "metrics")
-    self.metrics = []
-    for metric in metrics:
-      self.metrics.append(eval(metric))
-    
-    print("--- loss    {}".format(self.loss))
-    print("--- metrics {}".format(self.metrics))
-    
-
-    self.model.compile(optimizer = self.optimizer, loss= self.loss, metrics = self.metrics)
-   
-    show_summary = self.config.get(MODEL, "show_summary")
-    if show_summary:
-      self.model.summary()
 
   #The following two methods has been taken from 
   # https://github.com/hamidriasat/UNet-3-Plus/blob/unet3p_lits/models/unet3plus_utils.py
@@ -171,7 +95,7 @@ class TensorflowUNet3Plus(TensorflowUNet):
     """ Custom function for conv2d:
         Apply  3*3 convolutions with BN and relu.
     """
-
+    normalization = False
     for i in range(1, n + 1):
         x = k.layers.Conv2D(filters=kernels, kernel_size=kernel_size,
                             padding=padding, strides=strides,
@@ -200,12 +124,13 @@ class TensorflowUNet3Plus(TensorflowUNet):
             base_filters = 16, num_layers = 5):
     print("=== TensorflowUNet3Plus  create ...")
     # num_layers is not unsed
-    self.dropout_rate = self.config.get(MODEL, "dropout_rate")
+    self.dropout_rate = self.config.get(ConfigParser.MODEL, "dropout_rate")
     print("=== dropout_rate {}".format(self.dropout_rate))
     output_channels = 1
     #input_shape, output_channels
     input_shape = (image_width, image_height, image_channels)
-    num_filters = 5
+
+    num_filters = num_layers
     """ UNet3+ base model """
     #filters = [64, 128, 256, 512, 1024]
     filters = []
@@ -321,7 +246,10 @@ class TensorflowUNet3Plus(TensorflowUNet):
 
     # 2023/06/29 Modified activate function from softmax to sigmoid 
     #output = k.activations.softmax(d)
-    output = tf.keras.layers.Activation(activation='sigmoid')(d)
+    activation = "softmax"
+    if num_classes == 1:
+      activation = "sigmoid"
+    output = tf.keras.layers.Activation(activation=activation)(d)
 
     return tf.keras.Model(inputs=input_layer, outputs=[output], name='UNet_3Plus')
  
@@ -333,14 +261,14 @@ if __name__ == "__main__":
     config_file    = "./train_eval_infer.config"
     # You can specify config_file on your command line parammeter.
     if len(sys.argv) == 2:
-      confi_file= sys.argv[1]
+      config_file= sys.argv[1]
       if not os.path.exists(config_file):
          raise Exception("Not found " + config_file)
      
     config   = ConfigParser(config_file)
     
-    width    = config.get(MODEL, "image_width")
-    height   = config.get(MODEL, "image_height")
+    width    = config.get(ConfigParser.MODEL, "image_width")
+    height   = config.get(ConfigParser.MODEL, "image_height")
 
     if not (width == height and  height % 128 == 0 and width % 128 == 0):
       raise Exception("Image width should be a multiple of 128. For example 128, 256, 512")
@@ -349,8 +277,8 @@ if __name__ == "__main__":
     model    = TensorflowUNet3Plus(config_file)
     # Please download and install graphviz for your OS
     # https://www.graphviz.org/download/ 
-    image_file = './asset/model.png'
-    tf.keras.utils.plot_model(model.model, to_file=image_file, show_shapes=True)
+    #image_file = './asset/model.png'
+    #tf.keras.utils.plot_model(model.model, to_file=image_file, show_shapes=True)
 
   except:
     traceback.print_exc()

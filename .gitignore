@@ -3,13 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# 2024/02/21
-dataset/Hippocampus/train/
-dataset/Hippocampus/valid/
+# 2024/09/25
+dataset/
 projects/*/*/models/
+projects/*/*/epoch_change_infer/
 
-projects/*/*/generated_images_dir/
-projects/*/*/generated_masks_dir/
 
 # C extensions
 *.so

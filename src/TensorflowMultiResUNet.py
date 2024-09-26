@@ -32,12 +32,9 @@ import os
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="false"
 
-import shutil
 import sys
-import glob
 import traceback
 import numpy as np
-import cv2
 import tensorflow as tf
 
 from tensorflow.keras.layers import Lambda
@@ -47,24 +44,12 @@ from tensorflow.keras.layers import (Conv2D, Dropout, Conv2D, MaxPool2D,
                                      Activation, BatchNormalization, UpSampling2D, Concatenate)
 
 from tensorflow.keras.layers import Conv2DTranspose
-from tensorflow.keras.layers import concatenate
-from tensorflow.keras.activations import elu, relu
 from tensorflow.keras import Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-
+  
 from ConfigParser import ConfigParser
 
-from EpochChangeCallback import EpochChangeCallback
-from GrayScaleImageWriter import GrayScaleImageWriter
-from losses import dice_coef, basnet_hybrid_loss, jacard_loss, sensitivity, specificity
 from TensorflowUNet import TensorflowUNet
 
-MODEL  = "model"
-TRAIN  = "train"
-INFER  = "infer"
-
-BEST_MODEL_FILE = "best_model.h5"
 
 # Define TensorflowMultiResUNet class as a subclass of TensorflowUNet
 
@@ -124,7 +109,7 @@ class TensorflowMultiResUNet(TensorflowUNet):
   def create(self, num_classes, image_height, image_width, image_channels,
             base_filters = 16, num_layers = 5):
     # inputs
-    print("=== TensorflowAttentionUNet.create ")
+    print("=== TensorflowMultiResUNet.create ")
     print("Input image_height {} image_width {} image_channels {}".format(image_height, image_width, image_channels))
     inputs = Input((image_height, image_width, image_channels))
     p = Lambda(lambda x: x / 255)(inputs)
@@ -171,8 +156,8 @@ if __name__ == "__main__":
 
     config   = ConfigParser(config_file)
 
-    width    = config.get(MODEL, "image_width")
-    height   = config.get(MODEL, "image_height")
+    width    = config.get(ConfigParser.MODEL, "image_width")
+    height   = config.get(ConfigParser.MODEL, "image_height")
 
     if not (width == height and  height % 128 == 0 and width % 128 == 0):
       raise Exception("Image width should be a multiple of 128. For example 128, 256, 512")

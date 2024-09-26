@@ -15,15 +15,18 @@
 # 2023/05/05
 # EpochChangeCallback.py
 
+# 2024/04/02 Modified to save the line graphs of train_losses.csv and train_metrics.csv
+# at 'on_epoch_end' method.
+ 
 # encodig: utf-8
 
 import os
+import sys
 import shutil
 import traceback
-
-
 import tensorflow as tf
 
+from LineGraph import LineGraph
 
 class EpochChangeCallback(tf.keras.callbacks.Callback):
 
@@ -31,6 +34,9 @@ class EpochChangeCallback(tf.keras.callbacks.Callback):
   # Constructor
 
   def __init__(self, eval_dir, metrics=["accuracy", "val_accuracy"]):
+    # 2024/04/02
+    self.lineGraph = LineGraph()
+
     self.eval_dir = eval_dir
     self.metrics  = metrics
     if os.path.exists(self.eval_dir):
@@ -83,6 +89,9 @@ class EpochChangeCallback(tf.keras.callbacks.Callback):
        with open(self.train_losses_file, "a") as f:
          losses    = "{}, {:.4f}, {:.4f}".format(epoch, loss, val_loss)
          f.write(losses + NL)
+       # 2024/04/02
+       self.lineGraph.plot(self.train_losses_file)
+
     except Exception as ex:
         traceback.print_exc()
 
@@ -90,6 +99,21 @@ class EpochChangeCallback(tf.keras.callbacks.Callback):
        with open(self.train_accuracies_file, "a") as f:
          accuraies = "{}, {:.4f}, {:.4f}".format(epoch, acc,  val_acc)
          f.write(accuraies + NL)
+       # 2024/04/02
+       self.lineGraph.plot(self.train_accuracies_file)
  
     except Exception as ex:
         traceback.print_exc()
+    self.terminate() 
+
+  def save_eval_graphs(self):
+    self.lineGraph.plot(self.train_losses_file)
+    self.lineGraph.plot(self.train_accuracies_file)
+  # 2024/08/10
+  def terminate(self):
+    break_training = "./break_training"
+    if os.path.exists(break_training):
+       print("----- Found break_training file")
+       sys.exit()
+       
+

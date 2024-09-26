@@ -34,14 +34,9 @@ import sys
 
 import traceback
 
-
 import numpy as np
-from glob import glob
 
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.layers import Lambda
-from tensorflow.keras.optimizers import Adam
 
 from tensorflow.keras.layers import Input
 
@@ -56,12 +51,9 @@ import sys
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.transformer_layers import patch_extract, patch_embedding, SwinTransformerBlock, patch_merging, patch_expanding
 
-
-from ConfigParser import ConfigParser
 from TensorflowUNet import TensorflowUNet
+from ConfigParser import ConfigParser
 
-from losses import dice_coef, basnet_hybrid_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss
 
 """
 #https://github.com/yingkaisha/keras-vision-transformer/blob/main/examples/Swin_UNET_oxford_iiit.ipynb
@@ -79,103 +71,12 @@ num_mlp = 512              # number of MLP nodes within the Transformer
 shift_window=True          # Apply window shifting, i.e., Swin-MSA
 """
 
-MODEL = "model"
-EVAL  = "eval"
-INFER = "infer"
-
 class TensorflowSwinUNet(TensorflowUNet) :
-
+  # 2024/03/25 Modified to call super()
   def __init__(self, config_file):
-    #super().__init__(config_file)
-    
-    self.model_loaded = False
+    super().__init__(config_file)
+    print("=== TensorflowSwinUNet.__init__")  
 
-    self.config_file = config_file
-    self.config = ConfigParser(config_file)
-    self.filter_num_begin = self.config.get(MODEL, "filter_num_begin", dvalue=128)
-    # number of channels in the first downsampling block; it is also the number of embedded dimensions
-    
-    self.depth            = self.config.get(MODEL, "depth", dvalue=4)
-    # the depth of SwinUNET; depth=4 means three down/upsampling levels and a bottom level 
-    
-    self.stack_num_down   = self.config.get(MODEL, "stack_num_down", dvalue=2)
-    # number of Swin Transformers per downsampling level
-
-    self.stack_num_up     = self.config.get(MODEL, "stack_num_up", dvalue=2)
-    # number of Swin Transformers per upsampling level
-    
-    self.patch_size       = self.config.get(MODEL, "patch_size", dvalue=(4,4))
-    # Extract 4-by-4 patches from the input image. Height and width of the patch must be equal.
-
-    self.num_heads        = self.config.get(MODEL, "num_heads",dvalue=[4, 8, 8, 8])
-    # number of attention heads per down/upsampling level
-    
-    self.window_size      = self.config.get(MODEL, "window_size")
-    #the size of attention window per down/upsampling level
-    
-    self.num_mlp          = self.config.get(MODEL, "num_mlp", dvalue=512)
-    # number of MLP nodes within the Transformer
-    
-    self.shift_window     = self.config.get(MODEL, "shift_window")
-    #Apply window shifting, i.e., Swin-MSA
-
-    num_classes     = self.config.get(MODEL, "num_classes")
-    image_width     = self.config.get(MODEL, "image_width")
-    image_height    = self.config.get(MODEL, "image_height")
-    image_channels  = self.config.get(MODEL, "image_channels")
-    base_filters    = self.config.get(MODEL, "base_filters")
-    num_layers      = self.config.get(MODEL, "num_layers")
-    self.model      = self.create(num_classes, image_height, image_width, image_channels,
-                         base_filters = base_filters, num_layers = num_layers)
-  
-    learning_rate    = self.config.get(MODEL, "learning_rate")
-    clipvalue        = self.config.get(MODEL, "clipvalue", dvalue=0.5)
-    
-    # Optimization
-    # <---- !!! gradient clipping is important
-    
-    # 2023/11/10
-    optimizer = self.config.get(MODEL, "optimizer", dvalue="AdamW")
-    if optimizer == "Adam":
-      self.optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate,
-         beta_1=0.9, 
-         beta_2=0.999, 
-         #epsilon=None,        #2023/11/10 epsion=None is not allowed
-         #weight_decay=0.0,     #2023/11/10 decay -> weight_decay
-         clipvalue=clipvalue,  #2023/06/26
-         amsgrad=False)
-      print("=== Optimizer Adam learning_rate {} clipvalue {} ".format(learning_rate, clipvalue))
-    
-    elif optimizer == "AdamW":
-      # 2023/11/10  Adam -> AdamW (tensorflow 2.14.0~)
-      self.optimizer = tf.keras.optimizers.AdamW(learning_rate = learning_rate,
-         clipvalue=clipvalue,
-         )
-      print("=== Optimizer AdamW learning_rate {} clipvalue {} ".format(learning_rate, clipvalue))
-    
-    binary_crossentropy = tf.keras.metrics.binary_crossentropy
-    binary_accuracy     = tf.keras.metrics.binary_accuracy
-    
-    # Default loss and metrics functions
-    self.loss    = binary_crossentropy
-    self.metrics = [binary_accuracy]
-    
-    # Read a loss function name from our config file, and eval it.
-    # loss = "binary_crossentropy"
-    self.loss  = eval(self.config.get(MODEL, "loss"))
-
-    # Read a list of metrics function names, ant eval each of the list,
-    # metrics = ["binary_accuracy"]
-    metrics  = self.config.get(MODEL, "metrics")
-    self.metrics = []
-    for metric in metrics:
-      self.metrics.append(eval(metric))
-    
-    print("--- loss    {}".format(self.loss))
-    print("--- metrics {}".format(self.metrics))
-    
-  
-    self.model.compile(optimizer= self.optimizer, loss =   self.loss, metrics= self.metrics)
 
   # The following some methods have been taken from
   # https://github.com/yingkaisha/keras-unet-collection/blob/main/keras_unet_collection/_model_swin_unet_2d.py
@@ -355,10 +256,35 @@ class TensorflowSwinUNet(TensorflowUNet) :
   def create(self, num_classes, image_height, image_width, image_channels,
                base_filters = 16, num_layers = 6):
     print("==== TensorflowSwiUNet.create ")
+
+    self.filter_num_begin = self.config.get(ConfigParser.MODEL, "filter_num_begin", dvalue=128)
+    # number of channels in the first downsampling block; it is also the number of embedded dimensions
+    
+    self.depth            = self.config.get(ConfigParser.MODEL, "depth", dvalue=4)
+    # the depth of SwinUNET; depth=4 means three down/upsampling levels and a bottom level 
+    
+    self.stack_num_down   = self.config.get(ConfigParser.MODEL, "stack_num_down", dvalue=2)
+    # number of Swin Transformers per downsampling level
+
+    self.stack_num_up     = self.config.get(ConfigParser.MODEL, "stack_num_up", dvalue=2)
+    # number of Swin Transformers per upsampling level
+    
+    self.patch_size       = self.config.get(ConfigParser.MODEL, "patch_size", dvalue=(4,4))
+    # Extract 4-by-4 patches from the input image. Height and width of the patch must be equal.
+
+    self.num_heads        = self.config.get(ConfigParser.MODEL, "num_heads",dvalue=[4, 8, 8, 8])
+    # number of attention heads per down/upsampling level
+    
+    self.window_size      = self.config.get(ConfigParser.MODEL, "window_size")
+    #the size of attention window per down/upsampling level
+    
+    self.num_mlp          = self.config.get(ConfigParser.MODEL, "num_mlp", dvalue=512)
+    # number of MLP nodes within the Transformer
+    
+    self.shift_window     = self.config.get(ConfigParser.MODEL, "shift_window")
+   
     input_size = (image_width, image_height, image_channels)
-    #IN = Input(input_size)
-    inputs = Input((image_height, image_width, image_channels))
-    IN = Lambda(lambda x: x / 255)(inputs)
+
     '''
     The base of SwinUNET.
     
@@ -411,7 +337,11 @@ class TensorflowSwinUNet(TensorflowUNet) :
                       shift_window=self.shift_window, name='swin_unet')
     # output layer
     #OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
-    OUT = Conv2D(num_classes, kernel_size=1, use_bias=False, activation='sigmoid')(X)
+    # 2024/03/25
+    activation = "softmax"
+    if num_classes == 1:
+       activation = "sigmoid"
+    OUT = Conv2D(num_classes, kernel_size=1, use_bias=False, activation=activation)(X)
 
     # functional API model
     model = Model(inputs=[IN,], outputs=[OUT,], name='SwinNet')

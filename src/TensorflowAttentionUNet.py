@@ -26,45 +26,23 @@
 
 
 import os
+import sys
+import traceback
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="false"
 
-import shutil
-import sys
-import glob
-import traceback
-import numpy as np
-import cv2
 import tensorflow as tf
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.layers import Input
-
 from tensorflow.keras.layers import (Conv2D, Dropout, Conv2D, MaxPool2D, 
                                      Activation, BatchNormalization, UpSampling2D, Concatenate)
 
-from tensorflow.keras.layers import Conv2DTranspose
-from tensorflow.keras.layers import concatenate
-from tensorflow.keras.activations import elu, relu
 from tensorflow.keras import Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-
 from ConfigParser import ConfigParser
-
-from EpochChangeCallback import EpochChangeCallback
-from GrayScaleImageWriter import GrayScaleImageWriter
-from losses import dice_coef, basnet_hybrid_loss, jacard_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss
-
 from TensorflowUNet import TensorflowUNet
 
-MODEL  = "model"
-TRAIN  = "train"
-INFER  = "infer"
-
-BEST_MODEL_FILE = "best_model.h5"
 
 class TensorflowAttentionUNet(TensorflowUNet):
 
@@ -80,8 +58,10 @@ class TensorflowAttentionUNet(TensorflowUNet):
     x = Activation("relu")(x)
 
     x = Conv2D(num_filters, 3, padding="same")(x)
-    # 2023/07/10
-    x = Dropout(self.dropout_rate)(x)
+    # 2024/03/29
+    if self.dropout_rate>0.0:
+      print("--- inserted Dropout")
+      x = Dropout(self.dropout_rate)(x)
 
     x = BatchNormalization()(x)
     x = Activation("relu")(x)
@@ -98,8 +78,10 @@ class TensorflowAttentionUNet(TensorflowUNet):
     Wg = BatchNormalization()(Wg)
 
     Ws = Conv2D(num_filters, 1, padding="same")(s)
-    # 2023/07/10
-    Ws = Dropout(self.dropout_rate)(Ws)
+    # 2024/03/29
+    if self.dropout_rate>0.0:
+      print("--- inserted Dropout")
+      Ws = Dropout(self.dropout_rate)(Ws)
 
     Ws = BatchNormalization()(Ws)
 
@@ -122,17 +104,20 @@ class TensorflowAttentionUNet(TensorflowUNet):
     # inputs
     print("=== TensorflowAttentionUNet.create ")
     print("Input image_height {} image_width {} image_channels {}".format(image_height, image_width, image_channels))
-    self.dropout_rate = self.config.get(MODEL, "dropout_rate", dvalue=0.1)
+    self.dropout_rate = self.config.get(ConfigParser.MODEL, "dropout_rate", dvalue=0.1)
     print("=== dropout_rate {}".format(self.dropout_rate))
 
     inputs = Input((image_height, image_width, image_channels))
 
     #inputs = Input((image_height, image_width, image_channels))
-    p = Lambda(lambda x: x / 255)(inputs)
+    # 2024/03/31 commentted out the following line.
+    #p = Lambda(lambda x: x / 255)(inputs)
+    p = inputs
     enc = []
     d   = None
     for i in range(num_layers):
       filters = base_filters * (2**i)
+      print("--- encoder filters {}".format(filters))
       if i < num_layers-1:
         s, p    = self.encoder_block(p, filters)
         enc.append(s)
@@ -145,11 +130,17 @@ class TensorflowAttentionUNet(TensorflowUNet):
     for i in range(num_layers-1):
       f = enc_len - 1 - i
       filters = base_filters* (2**f)
+      print("--- decoder filters {}".format(filters))
+
       s = enc[n]
       d = self.decoder_block(d, s, filters)
       n += 1
 
-    outputs = Conv2D(num_classes, (1, 1), activation='sigmoid')(d)
+    # 2024/03/29 Added the following line.
+    activation = "softmax"
+    if num_classes == 1:
+      activation = "sigmoid"
+    outputs = Conv2D(num_classes, (1, 1), activation=activation)(d)
 
     model = Model(inputs=[inputs], outputs=[outputs], name="Attention-UNET")
 
@@ -167,8 +158,8 @@ if __name__ == "__main__":
 
     config   = ConfigParser(config_file)
 
-    width    = config.get(MODEL, "image_width")
-    height   = config.get(MODEL, "image_height")
+    width    = config.get(ConfigParser.MODEL, "image_width")
+    height   = config.get(ConfigParser.MODEL, "image_height")
 
     if not (width == height and  height % 128 == 0 and width % 128 == 0):
       raise Exception("Image width should be a multiple of 128. For example 128, 256, 512")

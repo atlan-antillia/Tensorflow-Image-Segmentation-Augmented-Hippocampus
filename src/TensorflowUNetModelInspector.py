@@ -21,7 +21,7 @@
 import os
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
-os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="false"
+os.environ["TF_ENABLE_GPU_GARBAGE_COLLECTION"]="true"
 
 import shutil
 import sys
@@ -29,10 +29,19 @@ import traceback
 
 from ConfigParser import ConfigParser
 from TensorflowUNet import TensorflowUNet
+from TensorflowAttentionUNet import TensorflowAttentionUNet 
+from TensorflowEfficientUNet import TensorflowEfficientUNet
+from TensorflowMultiResUNet import TensorflowMultiResUNet
+from TensorflowSwinUNet import TensorflowSwinUNet
+from TensorflowTransUNet import TensorflowTransUNet
+from TensorflowUNet3Plus import TensorflowUNet3Plus
+from TensorflowU2Net import TensorflowU2Net
+from TensorflowSharpUNet import TensorflowSharpUNet
+#from TensorflowBASNet    import TensorflowBASNet
+from TensorflowDeepLabV3Plus import TensorflowDeepLabV3Plus
+from TensorflowEfficientNetB7UNet import TensorflowEfficientNetB7UNet
+#from TensorflowXceptionLikeUNet import TensorflowXceptionLikeUNet
 
-MODEL   = "model"
-TRAIN   = "train"
-INSPECT = "inspect"
 
 if __name__ == "__main__":
   try:
@@ -44,10 +53,14 @@ if __name__ == "__main__":
     config   = ConfigParser(config_file)
 
     # Create a UNetMolde and compile
-    model   = TensorflowUNet(config_file)
-    
-    model_graph = config.get(INSPECT, "model_graph", dvalue= "./model.png") 
-    summary     = config.get(INSPECT, "summary",     dvalue="./summary.txt")
+    #model   = TensorflowUNet(config_file)
+    ModelClass = eval(config.get(ConfigParser.MODEL, "model", dvalue="TensorflowUNet"))
+    print("=== ModelClass {}".format(ModelClass))
+
+    model     = ModelClass(config_file)
+        
+    model_graph = config.get(ConfigParser.INSPECT, "model_graph", dvalue= "./model.png") 
+    summary     = config.get(ConfigParser.INSPECT, "summary",     dvalue="./summary.txt")
     # Inspect the model.
     model.inspect(model_graph, summary)
 

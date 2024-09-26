@@ -18,6 +18,8 @@
 # 2023/05/05 to-arai
 # 2023/05/24 to-arai
 # 2024/02/22 Added self.colorize
+# 2024/03/01 Modifie save and save_resize method to use mask_to_image method.
+# 2024/04/13 Modified save_resized method to check image mode.
 
 import os
 import cv2
@@ -28,60 +30,51 @@ from PIL import Image, ImageOps
 
 class GrayScaleImageWriter:
 
-  def __init__(self, image_format=".jpg", colorize=False, black="black", white="green"):
+  def __init__(self, image_format=".jpg", colorize=False, black="black", white="green", verbose=True):
     self.image_format = image_format
     self.colorize     = colorize
     self.black   = black
     self.white   = white
+    self.verbose = verbose
 
-  def save(self, data, output_dir, name, factor=255.0):
+  def mask_to_image(self, data, factor=255.0):
     h = data.shape[0]
     w = data.shape[1]
-    #(h, w, c) = data.shape
-    image = Image.new("L", (w, h))
-    print(" image w: {} h: {}".format(w, h))
-    for i in range(w):
-      for j in range(h):
-        z = data[j][i]
-        if type(z) == list:
-          z = z[0]
-        v = int(z * factor)
-        image.putpixel((i,j), v)
 
-    image_filepath = os.path.join(output_dir, name + self.image_format)
-
-    image.save(image_filepath)
-    print("=== Saved {}". format(image_filepath))
-
-    
-  
-  def save_resized(self, data, resized, output_dir, name, factor=255.0):
-    h = data.shape[0]
-    w = data.shape[1]
-    #(h, w, c) = data.shape
-    image = Image.new("L", (w, h))
-    print(" image w: {} h: {}".format(w, h))
-    for i in range(w):
-      for j in range(h):
-        z = data[j][i]
-        if type(z) == list:
-          z = z[0]
-        v = int(z * factor)
-        image.putpixel((i,j), v)
-    #print("{} {} {}".format(output_dir, name, self.image_format))
-    image_filepath = os.path.join(output_dir, name + self.image_format)
- 
-    print("== resized to {}".format(resized))
-    image = image.resize(resized)
-    if self.colorize:
-       image = ImageOps.colorize(image, black=self.black, white=self.white)
-    # image.putalpha(alpha=0)
-    image.save(image_filepath)
+    data = data*factor
+    data = data.reshape([w, h])
+    image = Image.fromarray(data)
     image = image.convert("RGB")
-    print("=== Saved {}". format(image_filepath))
-    # 2023/0524
-    #mask = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    return image
+  
+  def save(self, data, output_dir, name, factor=255.0):
+    image = self.mask_to_image(data, factor=factor)
+    image_filepath = os.path.join(output_dir, name + self.image_format)
+    image.save(image_filepath)
+    if self.verbose:
+      print("=== Saved {}". format(image_filepath))
+
+  def save_resized(self, data, resized, output_dir, name, factor=255.0):
+    image = self.mask_to_image(data, factor=factor)
+
+    image_filepath = os.path.join(output_dir, name + self.image_format)
+
+    if self.verbose:
+      print("== resized to {}".format(resized))
+    image = image.resize(resized)
+    #print("--- colorize {}{}".format(self.colorize, image_filepath))
+
+    if self.colorize:
+       #2024/04/13 Added the following two lines
+       if image.mode != "L":
+         image = image.convert("L")
+       #print("-----colorized----")
+       image = ImageOps.colorize(image, black=self.black, white=self.white)
+    image.save(image_filepath)
+    if self.verbose:
+      print("=== Saved {}". format(image_filepath))
     return np.array(image)
+    
   
     
 if __name__ == "__main__":

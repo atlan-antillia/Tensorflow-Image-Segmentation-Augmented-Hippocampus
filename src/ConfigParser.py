@@ -26,10 +26,40 @@ import traceback
 #Comments were taken from main.py
 
 class ConfigParser:
+  # settion names of a ini file.
+  DATASET     = "dataset"
+  DATASETCLASS = "datasetclass"
+  EVAL        = "eval"
+  GENERATOR   = "generator"
+  MASK        = "mask"
+  # 2024/07/19
+  IMAGE       = "image"
+  INFER       = "infer"
+  MODEL       = "model"
+  TEST        = "test"
+  TRAIN       = "train"
+  TILEDINFER  = "tiledinfer"
+  TRANSORMER  = "transformer"
+  DEFORMATION = "deformation"
+  SEGMENTATION= "segmentation"
+  AUGMENTOR   = "augmentor"
+  DISTORTION  = "distortion"
+  INSPECCT    = "inspect"
+  SHARPENING  = "sharpening"
+  BRIGHTENING = "brightening"
+
+  # Barrel-distortion 
+  BARRDISTORTION = "barrdistortion"
+  # 2024/07/19
+  # Pincushion-distortion
+  PINCDISTORTION = "pincdistortion"
+
+  PREPROCESSOR = "preprocessor"
 
   # Constructor
   # 
-  def __init__(self, config_path):
+  def __init__(self, config_path, verbose=True):
+    self.verbose = verbose
     print("==== ConfigParser {}".format(config_path))
     if not os.path.exists(config_path):
       raise Exception("Not found config_path {}".format(config_path))
@@ -63,8 +93,8 @@ class ConfigParser:
       
     except:
       value = dvalue
-      #2023/06/27
-      print("=== WARNING: Not found [{}]  {}, return default value {}".format(section, name, value))
+      if self.verbose:
+        print("=== WARNING: Not found [{}]  {}, return default value {}".format(section, name, value))
       #traceback.print_exc()   
     return value
 

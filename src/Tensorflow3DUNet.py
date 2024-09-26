@@ -69,8 +69,7 @@ from ConfigParser import ConfigParser
 from EpochChangeCallback import EpochChangeCallback
 from GrayScaleImageWriter import GrayScaleImageWriter
 
-MODEL  = "model"
-TRAIN  = "train"
+
 BEST_MODEL_FILE = "best_model.h5"
 
 """
@@ -109,21 +108,21 @@ class Tensorflow3DUNet:
 
   def __init__(self, config_file):
     self.config    = ConfigParser(config_file)
-    image_depth    = self.config.get(MODEL, "image_depth")
+    image_depth    = self.config.get(ConfigParser.MODEL, "image_depth")
 
-    image_height   = self.config.get(MODEL, "image_height")
+    image_height   = self.config.get(ConfigParser.MODEL, "image_height")
 
-    image_width    = self.config.get(MODEL, "image_width")
-    image_channels = self.config.get(MODEL, "image_channels")
+    image_width    = self.config.get(ConfigParser.MODEL, "image_width")
+    image_channels = self.config.get(ConfigParser.MODEL, "image_channels")
 
-    num_classes    = self.config.get(MODEL, "num_classes")
-    base_filters   = self.config.get(MODEL, "base_filters")
-    num_layers     = self.config.get(MODEL, "num_layers")
+    num_classes    = self.config.get(ConfigParser.MODEL, "num_classes")
+    base_filters   = self.config.get(ConfigParser.MODEL, "base_filters")
+    num_layers     = self.config.get(ConfigParser.MODEL, "num_layers")
     
     self.model     = self.create(num_classes, image_depth, image_height, image_width, image_channels, 
                             base_filters = base_filters, num_layers = num_layers)
     
-    learning_rate  = self.config.get(MODEL, "learning_rate")
+    learning_rate  = self.config.get(ConfigParser.MODEL, "learning_rate")
 
     self.optimizer = Adam(learning_rate = learning_rate, 
          beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, 
@@ -142,7 +141,7 @@ class Tensorflow3DUNet:
     s= Lambda(lambda x: x / 255)(inputs)
 
     # Encoder
-    dropout_rate = self.config.get(MODEL, "dropout_rate")
+    dropout_rate = self.config.get(ConfigParser.MODEL, "dropout_rate")
     enc         = []
     kernel_size = (3, 3, 3)
     pool_size   = (2, 2, 2)
@@ -189,18 +188,18 @@ class Tensorflow3DUNet:
 
 
   def train(self, x_train, y_train): 
-    batch_size = self.config.get(TRAIN, "batch_size")
-    epochs     = self.config.get(TRAIN, "epochs")
-    patience   = self.config.get(TRAIN, "patience")
-    eval_dir   = self.config.get(TRAIN, "eval_dir")
-    model_dir  = self.config.get(TRAIN, "model_dir")
+    batch_size = self.config.get(ConfigParser.TRAIN, "batch_size")
+    epochs     = self.config.get(ConfigParser.TRAIN, "epochs")
+    patience   = self.config.get(ConfigParser.TRAIN, "patience")
+    eval_dir   = self.config.get(ConfigParser.TRAIN, "eval_dir")
+    model_dir  = self.config.get(ConfigParser.TRAIN, "model_dir")
 
     if os.path.exists(model_dir):
       shutil.rmtree(model_dir)
 
     if not os.path.exists(model_dir):
       os.makedirs(model_dir)
-    weight_filepath   = os.path.join(model_dir, BEST_MODEL_FILE)
+    weight_filepath   = os.path.join(model_dir, TensorflowUNet.BEST_MODEL_FILE)
 
     early_stopping = EarlyStopping(patience=patience, verbose=1)
     check_point    = ModelCheckpoint(weight_filepath, verbose=1, save_best_only=True)
@@ -218,9 +217,9 @@ class Tensorflow3DUNet:
     # Sorry the bmp or tif files are ignored.
     image_files  = glob.glob(input_dir + "/*.png")
     image_files += glob.glob(input_dir + "/*.jpg")
-    depth        = self.config.get(MODEL, "image_depth")
-    width        = self.config.get(MODEL, "image_width")
-    height       = self.config.get(MODEL, "image_height")
+    depth        = self.config.get(ConfigParser.MODEL, "image_depth")
+    width        = self.config.get(ConfigParser.MODEL, "image_width")
+    height       = self.config.get(ConfigParser.MODEL, "image_height")
 
     for image_file in image_files:
       basename = os.path.basename(image_file)
@@ -239,11 +238,11 @@ class Tensorflow3DUNet:
      
 
   def predict(self, images, expand=True):
-    model_dir  = self.config.get(TRAIN, "model_dir")
+    model_dir  = self.config.get(ConfigParser.TRAIN, "model_dir")
 
     if not os.path.exists(model_dir):
       raise Exception("Not found " + model_dir)
-    weight_filepath = os.path.join(model_dir, BEST_MODEL_FILE)
+    weight_filepath = os.path.join(model_dir, TensorflowUNet.BEST_MODEL_FILE)
 
     self.model.load_weights(weight_filepath)
     print("=== Loaded weight_file {}".format(weight_filepath))
@@ -258,11 +257,11 @@ class Tensorflow3DUNet:
 
 
   def evaluate(self, x_test, y_test): 
-    model_dir  = self.config.get(TRAIN, "model_dir")
+    model_dir  = self.config.get(ConfigParser.TRAIN, "model_dir")
 
     if not os.path.exists(model_dir):
       raise Exception("Not found " + model_dir)
-    weight_filepath = os.path.join(model_dir, BEST_MODEL_FILE)
+    weight_filepath = os.path.join(model_dir, TensorflowUNet.BEST_MODEL_FILE)
 
     self.model.load_weights(weight_filepath)
     print("=== Loaded weight_file {}".format(weight_filepath))
@@ -275,10 +274,10 @@ if __name__ == "__main__":
   try:
     config_file    = "./model.config"
     config   = ConfigParser(config_file)
-    depth    = config.get(MODEL, "image_depth")
-    width    = config.get(MODEL, "image_width")
-    height   = config.get(MODEL, "image_height")
-    channels = config.get(MODEL, "image_channels")
+    depth    = config.get(ConfigParser.MODEL, "image_depth")
+    width    = config.get(ConfigParser.MODEL, "image_width")
+    height   = config.get(ConfigParser.MODEL, "image_height")
+    channels = config.get(ConfigParser.MODEL, "image_channels")
 
     #if not (width == height and  height % 128 == 0 and width % 128 == 0):
     #  raise Exception("Image width should be a multiple of 128. For example 128, 256, 512")

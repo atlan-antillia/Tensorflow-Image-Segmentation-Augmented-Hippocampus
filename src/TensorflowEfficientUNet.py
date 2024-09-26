@@ -22,52 +22,23 @@
 
 import os
 import sys
-
 import traceback
-
-
 import numpy as np
-from glob import glob
-
 import tensorflow as tf
-#tf.compat.v1.disable_eager_execution()
-
-#from tensorflow.python.distribute.collective_all_reduce_strategy import CollectiveAllReduceExtended
-#CollectiveAllReduceExtended._enable_check_health = False
-
-from tensorflow import keras
-from tensorflow.keras.layers import Lambda
-from tensorflow.keras.optimizers import Adam
 
 from tensorflow.keras.layers import Input
-
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (Conv2D, BatchNormalization, Activation, MaxPool2D, 
-                                     Conv2DTranspose, Concatenate, Input)
-
 from tensorflow.keras.applications import EfficientNetB0
 
-from ConfigParser import ConfigParser
 from TensorflowUNet import TensorflowUNet
+from ConfigParser import ConfigParser
 
-from losses import dice_coef, basnet_hybrid_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss
-
-MODEL = "model"
-EVAL  = "eval"
-INFER = "infer"
 
 class TensorflowEfficientUNet(TensorflowUNet) :
 
   def __init__(self, config_file):
-    #tf.keras.backend.clear_session()
-    self.efficientnet = "B0"
-    config = ConfigParser(config_file)
-    self.efficientnet = config.get(MODEL, "efficientnet", dvalue="B0")
-    
     super().__init__(config_file)
     
-
   def get_encoder(self, weights, inputs):
     name = self.efficientnet
     print("=== get_encoder EfficientNet{}".format(name))
@@ -125,15 +96,20 @@ class TensorflowEfficientUNet(TensorflowUNet) :
   # This method has been taken from the following code.
   # https://github.com/he44/EfficientNet-UNet/blob/master/efficientnet_unet/build_eunet.py
   def create(self, num_classes, image_height, image_width, image_channels,
-               base_filters = 16, num_layers = 6):
-   
+               base_filters = 16, num_layers = 6):   
     print("=== TensorflowEfficientNetUNet.create ")
+    self.efficientnet = self.config.get(ConfigParser.MODEL, "efficientnet", dvalue="B0")
+    print("=== efficientnet {}".format(self.efficientnet))
+
     print("Input image_height {} image_width {} image_channels {}".format(image_height, image_width, image_channels))
     inputs  = Input((image_height, image_width, image_channels))
+    #
+    #inputs = tf.keras.layers.Lambda(lambda x: x / 255)(inputs)
+
     weights = "imagenet"
     encoder = self.get_encoder(weights, inputs)
     
-    new_input =encoder.input
+    new_input = encoder.input
     # encoder output, we won't use the top_conv (which has 1280 filters)
     # let's just use 7a bn, which is 7 x 7 x 320
     encoder_output = encoder.get_layer(name='block7a_project_bn').output

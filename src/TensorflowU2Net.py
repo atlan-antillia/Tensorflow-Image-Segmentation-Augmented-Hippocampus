@@ -13,21 +13,13 @@
 # limitations under the License.
 #
 
-# TensorflowSwinUNet.py
+# TensorflowU2Net.py
 # 2023/07/04 to-arai
-
-# Some methods on SwinTransformer in this TensorflowSwinUNet class have been taken from the following web-sites.
-#
-# keras-vision-transformer
-# https://github.com/yingkaisha/keras-vision-transformer
-#  MIT license
 
 # keras-unet-collection
 # https://github.com/yingkaisha/keras-unet-collection/tree/main/keras_unet_collection
 #  MIT license
 
-#Oxford IIIT image segmentation with SwinUNET
-#https://github.com/yingkaisha/keras-vision-transformer/blob/main/examples/Swin_UNET_oxford_iiit.ipynb
 
 import os
 import sys
@@ -41,6 +33,7 @@ from glob import glob
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Lambda
+
 from tensorflow.keras.optimizers import Adam
 
 from tensorflow.keras.layers import Input
@@ -53,6 +46,9 @@ import sys
 # keras-unet-collection
 # https://github.com/yingkaisha/keras-unet-collection/tree/main/keras_unet_collection
 
+# model_u2net_2d.py
+# https://github.com/yingkaisha/keras-unet-collection/blob/main/keras_unet_collection/_model_u2net_2d.py
+
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.transformer_layers import patch_extract, patch_embedding, SwinTransformerBlock, patch_merging, patch_expanding
 
@@ -61,97 +57,15 @@ from ConfigParser import ConfigParser
 from TensorflowUNet import TensorflowUNet
 
 from losses import dice_coef, basnet_hybrid_loss, sensitivity, specificity
-from losses import iou_coef, iou_loss, bce_iou_loss
+from losses import iou_coef, iou_loss, bce_iou_loss, bce_dice_loss
 
-
-
-MODEL = "model"
-EVAL  = "eval"
-INFER = "infer"
 
 class TensorflowU2Net(TensorflowUNet) :
-
+  
+  # 2024/03/25 Modified to call super()
   def __init__(self, config_file):
-    #super().__init__(config_file)
-    
-    self.model_loaded = False
-
-    self.config_file = config_file
-    self.config = ConfigParser(config_file)
-    self.filter_num_begin = self.config.get(MODEL, "filter_num_begin", dvalue=128)
-    # number of channels in the first downsampling block; it is also the number of embedded dimensions
-    
-    self.depth            = self.config.get(MODEL, "depth", dvalue=4)
-    # the depth of SwinUNET; depth=4 means three down/upsampling levels and a bottom level 
-    
-    self.stack_num_down   = self.config.get(MODEL, "stack_num_down", dvalue=2)
-    # number of Swin Transformers per downsampling level
-
-    self.stack_num_up     = self.config.get(MODEL, "stack_num_up", dvalue=2)
-    # number of Swin Transformers per upsampling level
-    
-    self.patch_size       = self.config.get(MODEL, "patch_size", dvalue=(4,4))
-    # Extract 4-by-4 patches from the input image. Height and width of the patch must be equal.
-
-    self.num_heads        = self.config.get(MODEL, "num_heads",dvalue=[4, 8, 8, 8])
-    # number of attention heads per down/upsampling level
-    
-    self.window_size      = self.config.get(MODEL, "window_size")
-    #the size of attention window per down/upsampling level
-    
-    self.num_mlp          = self.config.get(MODEL, "num_mlp", dvalue=512)
-    # number of MLP nodes within the Transformer
-    
-    self.shift_window     = self.config.get(MODEL, "shift_window")
-    #Apply window shifting, i.e., Swin-MSA
-
-    num_classes     = self.config.get(MODEL, "num_classes")
-    image_width     = self.config.get(MODEL, "image_width")
-    image_height    = self.config.get(MODEL, "image_height")
-    image_channels  = self.config.get(MODEL, "image_channels")
-    base_filters    = self.config.get(MODEL, "base_filters")
-    num_layers      = self.config.get(MODEL, "num_layers")
-    self.model      = self.create(num_classes, image_height, image_width, image_channels,
-                         base_filters = base_filters, num_layers = num_layers)
-  
-    learning_rate    = self.config.get(MODEL, "learning_rate")
-    clipvalue        = self.config.get(MODEL, "clipvalue", dvalue=0.5)
-    
-    # Optimization
-    # <---- !!! gradient clipping is important
-    
-    optimizer = keras.optimizers.Adam(learning_rate=learning_rate, clipvalue=clipvalue)
-    self.optimizer = Adam(learning_rate = learning_rate, 
-         beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, 
-         clipvalue=clipvalue,  
-         amsgrad=False)
-    
-    print("=== Optimizer Adam learning_rate {} clipvalue {}".format(learning_rate, clipvalue))
-
-    binary_crossentropy = tf.keras.metrics.binary_crossentropy
-    binary_accuracy     = tf.keras.metrics.binary_accuracy
-    
-    # Default loss and metrics functions
-    self.loss    = binary_crossentropy
-    self.metrics = [binary_accuracy]
-    
-    # Read a loss function name from our config file, and eval it.
-    # loss = "binary_crossentropy"
-    self.loss  = eval(self.config.get(MODEL, "loss"))
-
-    # Read a list of metrics function names, ant eval each of the list,
-    # metrics = ["binary_accuracy"]
-    metrics  = self.config.get(MODEL, "metrics")
-    self.metrics = []
-    for metric in metrics:
-      self.metrics.append(eval(metric))
-    
-    print("--- loss    {}".format(self.loss))
-    print("--- metrics {}".format(self.metrics))
-    
-  
-    self.model.compile(optimizer= self.optimizer, loss =   self.loss, metrics= self.metrics)
-
+    super().__init__(config_file)
+       
 
   # The following some methods have been taken from
   # https://github.com/yingkaisha/keras-unet-collection/blob/main/keras_unet_collection/_model_u2net_2d.py
@@ -431,16 +345,51 @@ class TensorflowU2Net(TensorflowUNet) :
 
     return X_out
 
-
-  def create(self, 
-             n_labels, image_height, image_width, image_channels,
-             base_filters = 16, num_layers = 6,
-             #input_size, 
-             #filter_num_down, 
-             filter_num_up='auto', filter_mid_num_down='auto', filter_mid_num_up='auto', 
-             filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Sigmoid', 
-             batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='u2net'):
+  def create(self, n_labels, image_height, image_width, image_channels,
+               base_filters = 16, num_layers = 6):
+    print("=== TensorflowU2Net.create")
+ 
+    filter_num_up      ='auto'
+    filter_mid_num_down='auto'
+    filter_mid_num_up  ='auto'
+ 
+    filter_4f_num     ='auto'
+    filter_4f_mid_num ='auto'
+    activation        ='ReLU'
+    output_activation ='Sigmoid'
+    batch_norm        = False
+    pool              = True
+    unpool            = True
+    deep_supervision  = False
+    name              = 'u2net'
     
+    self.filter_num_begin = self.config.get(ConfigParser.MODEL, "filter_num_begin", dvalue=128)
+    # number of channels in the first downsampling block; it is also the number of embedded dimensions
+    
+    self.depth            = self.config.get(ConfigParser.MODEL, "depth", dvalue=4)
+    # the depth of SwinUNET; depth=4 means three down/upsampling levels and a bottom level 
+    
+    self.stack_num_down   = self.config.get(ConfigParser.MODEL, "stack_num_down", dvalue=2)
+    # number of Swin Transformers per downsampling level
+
+    self.stack_num_up     = self.config.get(ConfigParser.MODEL, "stack_num_up", dvalue=2)
+    # number of Swin Transformers per upsampling level
+    
+    self.patch_size       = self.config.get(ConfigParser.MODEL, "patch_size", dvalue=(4,4))
+    # Extract 4-by-4 patches from the input image. Height and width of the patch must be equal.
+
+    self.num_heads        = self.config.get(ConfigParser.MODEL, "num_heads",dvalue=[4, 8, 8, 8])
+    # number of attention heads per down/upsampling level
+    
+    self.window_size      = self.config.get(ConfigParser.MODEL, "window_size")
+    #the size of attention window per down/upsampling level
+    
+    self.num_mlp          = self.config.get(ConfigParser.MODEL, "num_mlp", dvalue=512)
+    # number of MLP nodes within the Transformer
+    
+    self.shift_window     = self.config.get(ConfigParser.MODEL, "shift_window")
+    #Apply window shifting, i.e., Swin-MSA
+
     '''
     U^2-Net
     
@@ -501,6 +450,7 @@ class TensorflowU2Net(TensorflowUNet) :
     '''
     # filter_num_down =`[64, 128, 256, 512]`
     filter_num_down = []
+    print("--- num_layers {}".format(num_layers))
     num = base_filters
     for n in range(num_layers):
       filter_num_down +=[num]
@@ -545,10 +495,11 @@ class TensorflowU2Net(TensorflowUNet) :
     depth_backup = []
     depth_ = len(filter_num_down)
     
-    #IN = Input(shape=input_size) 
-    inputs = Input(image_height, image_width, image_channels)
-    IN = Lambda(lambda x: x / 255)(inputs)
-
+    input_size = (image_width, image_height, image_channels)
+    inputs = Input((image_height, image_width, image_channels))
+    #IN = Lambda(lambda x: x / 255)(inputs)
+    IN = Input(input_size)
+    
     # base (before conv + activation + upsample)
     X_out = self.u2net_2d_base(IN, 
                           filter_num_down, filter_num_up, 

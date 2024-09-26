@@ -15,7 +15,7 @@
 
 # ImageMaskDatasetGenerator.py
 # 2023/08/20 to-arai
-
+# 2024/05/10 Fixed spelling errors.
 import os
 import shutil
 import numpy as np
@@ -28,44 +28,37 @@ import traceback
 from ConfigParser import ConfigParser
 from ImageMaskAugmentor import ImageMaskAugmentor
 
-MODEL  = "model"
-TRAIN  = "train"
-EVAL   = "eval"
-MASK   = "mask"
-GENERATOR = "generator"
-AUGMENTOR = "augmentor"
-
 class ImageMaskDatasetGenerator:
 
-  def __init__(self, config_file, dataset=TRAIN, seed=137):
+  def __init__(self, config_file, dataset=ConfigParser.TRAIN, seed=137):
     random.seed = seed
 
     config = ConfigParser(config_file)
-    self.image_width    = config.get(MODEL, "image_width")
-    self.image_height   = config.get(MODEL, "image_height")
-    self.image_channels = config.get(MODEL, "image_channels")
+    self.image_width    = config.get(ConfigParser.MODEL, "image_width")
+    self.image_height   = config.get(ConfigParser.MODEL, "image_height")
+    self.image_channels = config.get(ConfigParser.MODEL, "image_channels")
     
-    self.train_dataset  = [config.get(TRAIN, "image_datapath"),
-                          config.get(TRAIN, "mask_datapath")]
+    self.train_dataset  = [config.get(ConfigParser.TRAIN, "image_datapath"),
+                          config.get(ConfigParser.TRAIN, "mask_datapath")]
     
-    self.eval_dataset   = [config.get(EVAL, "image_datapath"),
-                          config.get(EVAL, "mask_datapath")]
+    self.eval_dataset   = [config.get(ConfigParser.EVAL, "image_datapath"),
+                          config.get(ConfigParser.EVAL, "mask_datapath")]
 
-    self.batch_size     = config.get(TRAIN, "batch_size")
-    self.binarize       = config.get(MASK, "binarize")
-    self.threshold      = config.get(MASK, "threshold")
-    self.blur_mask      = config.get(MASK, "blur")
+    self.batch_size     = config.get(ConfigParser.TRAIN, "batch_size")
+    self.binarize       = config.get(ConfigParser.MASK, "binarize")
+    self.threshold      = config.get(ConfigParser.MASK, "threshold")
+    self.blur_mask      = config.get(ConfigParser.MASK, "blur")
     
     #Fixed blur_size
     self.blur_size = (3, 3)
-    if not dataset in [TRAIN, EVAL]:
+    if not dataset in [ConfigParser.TRAIN, ConfigParser.EVAL]:
       raise Exception("Invalid dataset")
       
     image_datapath = None
     mask_datapath  = None
   
     [image_datapath, mask_datapath] = self.train_dataset
-    if dataset == EVAL:
+    if dataset == ConfigParser.EVAL:
       [image_datapath, mask_datapath] = self.eval_dataset
 
     image_files  = glob.glob(image_datapath + "/*.jpg")
@@ -94,10 +87,10 @@ class ImageMaskDatasetGenerator:
     
     self.master_image_files    = image_files
     self.master_mask_files     = mask_files
-    self.generated_images_dir  = config.get(GENERATOR, "generated_images_dir", dvalue="./generated_images_dir")
-    self.generated_masks_dir   = config.get(GENERATOR, "generated_masks_dir",  dvalue="./generated_masks_dir")
-    self.debug                 = config.get(GENERATOR, "debug",        dvalue=True)
-    self.augmentation          = config.get(GENERATOR, "augmentation", dvalue=True)
+    self.generated_images_dir  = config.get(ConfigParser.GENERATOR, "generated_images_dir", dvalue="./generated_images_dir")
+    self.generated_masks_dir   = config.get(ConfigParser.GENERATOR, "generated_masks_dir",  dvalue="./generated_masks_dir")
+    self.debug                 = config.get(ConfigParser.GENERATOR, "debug",        dvalue=True)
+    self.augmentation          = config.get(ConfigParser.GENERATOR, "augmentation", dvalue=True)
     if self.debug:
       if os.path.exists(self.generated_images_dir):
         shutil.rmtree(self.generated_images_dir) 
@@ -157,7 +150,7 @@ class ImageMaskDatasetGenerator:
           mask_basename  = os.path.basename(mask_file)
           #print("ImageMaskDatasetGenerator {} {} {}".format(n, image_basename, mask_basename))
 
-          f.writelines(str(n) + image_basename + "_" + mask_basename + "\n")
+          f.writelines(str(n) + "_" + image_basename + "_" + mask_basename + "\n")
           image = cv2.imread(image_file)
           image = cv2.resize(image, dsize= (self.image_height, self.image_width), interpolation=cv2.INTER_NEAREST)
           IMAGES.append(image)
@@ -222,7 +215,7 @@ class ImageMaskDatasetGenerator:
 
     try:
       config_file = "./train_eval_infer.config"
-      generator = ImageMaskDatasetGenerator(config_file, dataset=TRAIN)
+      generator = ImageMaskDatasetGenerator(config_file, dataset=ConfigParser.TRAIN)
       for i in range(10):
         generator.generate()
 
